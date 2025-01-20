@@ -14,7 +14,6 @@ int main()
 	int quit = 0;
 	Farmsim farmsim;
 	init_farmsim(&farmsim, ROWS, COLS, 5);
-	plant_crop(&farmsim, 1, 1, 6); // test crop
 
 	init_sdl("farming simulator", SCREENW, SCREENH);
 	init_draw_state(&farmsim);
@@ -25,6 +24,7 @@ int main()
 		handle_events(&farmsim, &quit);
 		
 		update_farmsim(&farmsim, get_elapsed_ticks());
+		update_draw_state(get_elapsed_ticks());
 		start_ticks_count();
 		
 		clear_screen();

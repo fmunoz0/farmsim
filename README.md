@@ -1,6 +1,6 @@
 a simple farming simulator
 
-![screenshot](/screenshot.jpg)
+![demo gif](/demo.gif)
 
 sprites from https://opengameart.org/users/josehzz
 

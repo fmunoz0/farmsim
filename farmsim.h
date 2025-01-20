@@ -18,7 +18,6 @@ typedef enum {
 } Tile;
 
 typedef int CropType;
-typedef int CropStage;
 
 typedef struct {
 	int rows;
@@ -28,8 +27,8 @@ typedef struct {
 
 typedef struct Crop {
 	CropType type;
-	CropStage stage; // from 0 to Farmsim.cropstages - 1
-	int remainingsteps; // remaining steps for next stage (always positive)
+	int stage; // from 0 to "cropstages"
+	int remainingsteps; // remaining steps for next stage
 	int row;
 	int col;
 	struct Crop* next;
@@ -39,8 +38,8 @@ typedef struct {
 	Tilemap tilemap;
 	Crop* crops;
 	int numcrops;
-	unsigned stepmillis; // milliseconds per step
-	unsigned elapsedmillis; // goes from 0 to "stepmillis"
+	unsigned millisperstep;
+	unsigned elapsedmillis; // goes from 0 to "millisperstep"
 	int cropstages;
 } Farmsim;
 

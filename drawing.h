@@ -10,6 +10,7 @@ extern CropType selectedcrop;
 void init_draw_state(const Farmsim*);
 void clean_draw_state();
 void draw_everything();
+void update_draw_state(unsigned dt);
 
 // used by click handler
 CropType get_menu_croptype_from_screen_coord(int screenx, int screeny);

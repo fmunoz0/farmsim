@@ -9,6 +9,8 @@
 CropType selectedcrop = INVALID_CROPTYPE;
 
 static const Farmsim* farmsim;
+static int waterframe = 0; // water spritesheets have 8 animation frames
+static unsigned elapsedmillis = 0; // keep track of time for the water animation
 
 #define NUM_SPRITESHEETS 5
 static Spritesheet* spritesheets[NUM_SPRITESHEETS];
@@ -61,6 +63,42 @@ static void init_frametable()
 		frametable[CENTER(T_GRASS) | i] = F_GRASS;
 		frametable[CENTER(T_WATER) | i] = F_WATER;
 	}
+	
+	// vertical mud canal
+	frametable[CENTER(T_WATER) | TOP(T_SOIL) | LEFT(T_SOIL) | RIGHT(T_SOIL) | BOTTOM(T_WATER)] = (SPRT_MUD_WATER<<8) | 13;
+	frametable[CENTER(T_WATER) | TOP(T_WATER) | LEFT(T_SOIL) | RIGHT(T_SOIL) | BOTTOM(T_WATER)] = (SPRT_MUD_WATER<<8) | 12;
+	frametable[CENTER(T_WATER) | TOP(T_WATER) | LEFT(T_SOIL) | RIGHT(T_SOIL) | BOTTOM(T_SOIL)] = (SPRT_MUD_WATER<<8) | 11;
+
+	// horizontal mud canal
+	frametable[CENTER(T_WATER) | TOP(T_SOIL) | LEFT(T_SOIL) | RIGHT(T_WATER) | BOTTOM(T_SOIL)] = (SPRT_MUD_WATER<<8) | 8;
+	frametable[CENTER(T_WATER) | TOP(T_SOIL) | LEFT(T_WATER) | RIGHT(T_WATER) | BOTTOM(T_SOIL)] = (SPRT_MUD_WATER<<8) | 9;
+	frametable[CENTER(T_WATER) | TOP(T_SOIL) | LEFT(T_WATER) | RIGHT(T_SOIL) | BOTTOM(T_SOIL)] = (SPRT_MUD_WATER<<8) | 10;
+
+	// mud water corners
+	frametable[CENTER(T_WATER) | TOP(T_SOIL) | LEFT(T_SOIL) | RIGHT(T_WATER) | BOTTOM(T_WATER)] = (SPRT_MUD_WATER<<8) | 0; // top left
+	frametable[CENTER(T_WATER) | TOP(T_SOIL) | LEFT(T_WATER) | RIGHT(T_SOIL) | BOTTOM(T_WATER)] = (SPRT_MUD_WATER<<8) | 1; // top right
+	frametable[CENTER(T_WATER) | TOP(T_WATER) | LEFT(T_SOIL) | RIGHT(T_WATER) | BOTTOM(T_SOIL)] = (SPRT_MUD_WATER<<8) | 2; // bot left
+	frametable[CENTER(T_WATER) | TOP(T_WATER) | LEFT(T_WATER) | RIGHT(T_SOIL) | BOTTOM(T_SOIL)] = (SPRT_MUD_WATER<<8) | 3; // bot right
+	
+	// mud water borders
+	frametable[CENTER(T_WATER) | TOP(T_SOIL) | LEFT(T_WATER) | RIGHT(T_WATER) | BOTTOM(T_WATER)] = (SPRT_MUD_WATER<<8) | 4; // top
+	frametable[CENTER(T_WATER) | TOP(T_WATER) | LEFT(T_WATER) | RIGHT(T_WATER) | BOTTOM(T_SOIL)] = (SPRT_MUD_WATER<<8) | 5; // bot
+	frametable[CENTER(T_WATER) | TOP(T_WATER) | LEFT(T_SOIL) | RIGHT(T_WATER) | BOTTOM(T_WATER)] = (SPRT_MUD_WATER<<8) | 6; // left
+	frametable[CENTER(T_WATER) | TOP(T_WATER) | LEFT(T_WATER) | RIGHT(T_SOIL) | BOTTOM(T_WATER)] = (SPRT_MUD_WATER<<8) | 7; // right
+
+
+	// grass corners
+	frametable[CENTER(T_SOIL) | TOP(T_GRASS) | LEFT(T_GRASS) | RIGHT(T_SOIL) | BOTTOM(T_SOIL)] = (SPRT_GRASS_MUD<<8) | 0; // top left
+	frametable[CENTER(T_SOIL) | TOP(T_GRASS) | LEFT(T_SOIL) | RIGHT(T_GRASS) | BOTTOM(T_SOIL)] = (SPRT_GRASS_MUD<<8) | 1; // top right
+	frametable[CENTER(T_SOIL) | TOP(T_SOIL) | LEFT(T_GRASS) | RIGHT(T_SOIL) | BOTTOM(T_GRASS)] = (SPRT_GRASS_MUD<<8) | 2; // bot left
+	frametable[CENTER(T_SOIL) | TOP(T_SOIL) | LEFT(T_SOIL) | RIGHT(T_GRASS) | BOTTOM(T_GRASS)] = (SPRT_GRASS_MUD<<8) | 3; // bot right
+
+	// grass borders
+	frametable[CENTER(T_SOIL) | TOP(T_SOIL) | LEFT(T_GRASS) | RIGHT(T_SOIL) | BOTTOM(T_SOIL)] = (SPRT_GRASS_MUD<<8) | 6; // left
+	frametable[CENTER(T_SOIL) | TOP(T_SOIL) | LEFT(T_SOIL) | RIGHT(T_GRASS) | BOTTOM(T_SOIL)] = (SPRT_GRASS_MUD<<8) | 7; // right
+	frametable[CENTER(T_SOIL) | TOP(T_GRASS) | LEFT(T_SOIL) | RIGHT(T_SOIL) | BOTTOM(T_SOIL)] = (SPRT_GRASS_MUD<<8) | 8; // top
+	frametable[CENTER(T_SOIL) | TOP(T_GRASS) | LEFT(T_SOIL) | RIGHT(T_SOIL) | BOTTOM(T_WATER)] = (SPRT_GRASS_MUD<<8) | 8; // top
+	frametable[CENTER(T_SOIL) | TOP(T_SOIL) | LEFT(T_SOIL) | RIGHT(T_SOIL) | BOTTOM(T_GRASS)] = (SPRT_GRASS_MUD<<8) | 9; // bottom
 }
 
 void init_draw_state(const Farmsim* _farmsim)
@@ -129,10 +167,11 @@ static void draw_tile(int row, int col, int encodedframe)
 		return;
 	}
 	
+	int animation = (sprt == SPRT_MUD_WATER || sprt == SPRT_GRASS_WATER) ? waterframe : 0; // only water spritesheets have animations
 	int frame = encodedframe & 0xff;
 	
 	assert(sprt < NUM_SPRITESHEETS);
-	draw_spritesheet_frame(spritesheets[sprt], 0, frame, x, y, w, h);
+	draw_spritesheet_frame(spritesheets[sprt], animation, frame, x, y, w, h);
 }
 
 void draw_everything()
@@ -163,6 +202,20 @@ void draw_everything()
 		int x = mousex - (TILESIZE>>1);
 		int y = mousey - (TILESIZE>>1);
 		draw_spritesheet_frame(spritesheets[SPRT_CROPS], selectedcrop, 5, x, y, TILESIZE, TILESIZE);
+	}
+}
+
+void update_draw_state(unsigned dt)
+{
+	// "dt" can be large if the main loop got stuck atending events (holding the window titlebar for example)
+	// put an upper limit just to simplify logic and pretend it didn't get stuck
+	dt = dt % 100;
+	
+	elapsedmillis += dt;
+	
+	if (elapsedmillis >= 250) {
+		elapsedmillis -= 250;
+		waterframe = (waterframe+1) % 8;
 	}
 }
 

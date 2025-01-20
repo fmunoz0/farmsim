@@ -20,9 +20,14 @@ void handle_events(Farmsim* sim, int* quit)
 						plant_crop(sim, row, col, selectedcrop);
 				}
 				break;
-			case SDL_KEYDOWN:
-				if (e.key.keysym.sym == SDLK_ESCAPE)
-					selectedcrop = INVALID_CROPTYPE;
+			case SDL_KEYUP:
+				switch (e.key.keysym.sym) {
+					case SDLK_ESCAPE: selectedcrop = INVALID_CROPTYPE; break;
+					case SDLK_1: set_speed(sim, S_NORMAL); break;
+					case SDLK_2: set_speed(sim, S_FAST); break;
+					case SDLK_3: set_speed(sim, S_SUPERFAST); break;
+					case SDLK_0: set_speed(sim, S_STOP); break;
+				}
 				break;
 		}
 }

@@ -34,11 +34,18 @@ typedef struct Crop {
 	struct Crop* next;
 } Crop;
 
+typedef enum {
+	S_STOP,
+	S_NORMAL,
+	S_FAST,
+	S_SUPERFAST
+} Speed;
+
 typedef struct {
 	Tilemap tilemap;
 	Crop* crops;
 	int numcrops;
-	unsigned millisperstep;
+	unsigned millisperstep; // 0 means paused
 	unsigned elapsedmillis; // goes from 0 to "millisperstep"
 	int cropstages;
 } Farmsim;
@@ -48,5 +55,6 @@ void clean_farmsim(Farmsim* sim);
 
 void update_farmsim(Farmsim* sim, unsigned dt);
 void plant_crop(Farmsim* sim, int row, int col, CropType type);
+void set_speed(Farmsim* fs, Speed s);
 
 #endif

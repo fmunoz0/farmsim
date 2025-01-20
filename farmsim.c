@@ -107,9 +107,9 @@ void init_farmsim(Farmsim* sim, int rows, int cols, int cropstages)
 	init_tilemap(&sim->tilemap, rows, cols);
 	sim->crops = 0;
 	sim->numcrops = 0;
-	sim->millisperstep = 2000;
 	sim->elapsedmillis = 0;
 	sim->cropstages = cropstages;
+	set_speed(sim, S_NORMAL);
 }
 
 static int calc_steps_for_next_stage()
@@ -119,6 +119,9 @@ static int calc_steps_for_next_stage()
 
 void update_farmsim(Farmsim* sim, unsigned dt)
 {
+	if (!sim->millisperstep)
+		return;
+	
 	// "dt" can be large if the main loop got stuck atending events (holding the window titlebar for example)
 	// put an upper limit just to simplify logic and pretend it didn't get stuck
 	dt = dt % 100;
@@ -138,7 +141,7 @@ void update_farmsim(Farmsim* sim, unsigned dt)
 			
 			c->remainingsteps--;
 			
-			if (c->remainingsteps == 0) { // next stage
+			if (!c->remainingsteps) { // next stage
 				c->stage++;
 				c->remainingsteps = calc_steps_for_next_stage();
 			}
@@ -196,4 +199,14 @@ void plant_crop(Farmsim* sim, int row, int col, CropType type)
 	sim->numcrops++;
 	
 	printf("planted crop '%s' at (%d, %d)\n", cropnames[type], row, col);
+}
+
+void set_speed(Farmsim* fs, Speed s)
+{
+	switch (s) {
+		case S_STOP: fs->millisperstep = 0; break;
+		case S_NORMAL: fs->millisperstep = 5000; break;
+		case S_FAST: fs->millisperstep = 3000; break;
+		case S_SUPERFAST: fs->millisperstep = 1000; break;
+	}
 }

@@ -56,5 +56,6 @@ void clean_farmsim(Farmsim* sim);
 void update_farmsim(Farmsim* sim, unsigned dt);
 void plant_crop(Farmsim* sim, int row, int col, CropType type);
 void set_speed(Farmsim* fs, Speed s);
+void set_tile(Farmsim* fs, int row, int col, Tile t);
 
 #endif

@@ -7,6 +7,7 @@
 #define TILEMAP_OFFSETY TILESIZE // the first row is for the menu
 
 CropType selectedcrop = INVALID_CROPTYPE;
+Tile selectedtile = INVALID_TILE;
 
 static const Farmsim* farmsim;
 static int waterframe = 0; // water spritesheets have 8 animation frames
@@ -32,9 +33,9 @@ static Spritesheet* spritesheets[NUM_SPRITESHEETS];
 #define SPRT_CROPS 4
 
 #define F_UNKNOWN 0
-#define F_MUD (SPRT_GRASS_MUD<<8) | 5
-#define F_GRASS (SPRT_GRASS_MUD<<8) | 4
-#define F_WATER (SPRT_GRASS_WATER<<8) | 14
+#define F_MUD ((SPRT_GRASS_MUD<<8) | 5)
+#define F_GRASS ((SPRT_GRASS_MUD<<8) | 4)
+#define F_WATER ((SPRT_GRASS_WATER<<8) | 14)
 
 
 // encoded frame format: ssss ffff ffff
@@ -99,6 +100,8 @@ static void init_frametable()
 	frametable[CENTER(T_SOIL) | TOP(T_GRASS) | LEFT(T_SOIL) | RIGHT(T_SOIL) | BOTTOM(T_SOIL)] = (SPRT_GRASS_MUD<<8) | 8; // top
 	frametable[CENTER(T_SOIL) | TOP(T_GRASS) | LEFT(T_SOIL) | RIGHT(T_SOIL) | BOTTOM(T_WATER)] = (SPRT_GRASS_MUD<<8) | 8; // top
 	frametable[CENTER(T_SOIL) | TOP(T_SOIL) | LEFT(T_SOIL) | RIGHT(T_SOIL) | BOTTOM(T_GRASS)] = (SPRT_GRASS_MUD<<8) | 9; // bottom
+	
+	// complete water grass cases
 }
 
 void init_draw_state(const Farmsim* _farmsim)
@@ -191,17 +194,30 @@ void draw_everything()
 		draw_spritesheet_frame(spritesheets[SPRT_CROPS], c->type, frame, x, y, TILESIZE, TILESIZE);
 	}
 
-	// draw menu
+	// draw menu crops
 	for (int ct = 0; ct < CROPTYPES; ct++)
 		draw_spritesheet_frame(spritesheets[SPRT_CROPS], ct, 0, ct * TILESIZE, 0, TILESIZE, TILESIZE);
 
+	// draw menu tiles
+	draw_spritesheet_frame(spritesheets[F_MUD>>8], 0, F_MUD & 0xff, (CROPTYPES+1)*TILESIZE, 0, TILESIZE, TILESIZE);
+	draw_spritesheet_frame(spritesheets[F_GRASS>>8], 0, F_GRASS & 0xff, (CROPTYPES+2)*TILESIZE, 0, TILESIZE, TILESIZE);
+	draw_spritesheet_frame(spritesheets[F_WATER>>8], 0, F_WATER & 0xff, (CROPTYPES+3)*TILESIZE, 0, TILESIZE, TILESIZE);
+	
 	// draw selected crop at mouse position
-	if (selectedcrop != INVALID_CROPTYPE) {
+	if (selectedcrop != INVALID_CROPTYPE || selectedtile != INVALID_TILE) {
 		int mousex, mousey;
 		get_mouse_coords(&mousex, &mousey);
 		int x = mousex - (TILESIZE>>1);
 		int y = mousey - (TILESIZE>>1);
-		draw_spritesheet_frame(spritesheets[SPRT_CROPS], selectedcrop, 5, x, y, TILESIZE, TILESIZE);
+		
+		if (selectedcrop != INVALID_CROPTYPE)
+			draw_spritesheet_frame(spritesheets[SPRT_CROPS], selectedcrop, 5, x, y, TILESIZE, TILESIZE);
+		else
+			switch (get_tile_type(selectedtile)) {
+				case T_SOIL: draw_spritesheet_frame(spritesheets[F_MUD>>8], 0, F_MUD & 0xff, x, y, TILESIZE, TILESIZE); break;
+				case T_GRASS: draw_spritesheet_frame(spritesheets[F_GRASS>>8], 0, F_GRASS & 0xff, x, y, TILESIZE, TILESIZE); break;
+				case T_WATER: draw_spritesheet_frame(spritesheets[F_WATER>>8], 0, F_WATER & 0xff, x, y, TILESIZE, TILESIZE); break;
+			}
 	}
 }
 
@@ -219,19 +235,30 @@ void update_draw_state(unsigned dt)
 	}
 }
 
-// all crop types are located in order on the first row
-CropType get_menu_croptype_from_screen_coord(int screenx, int screeny)
+// first row in screen contains: crop types + empty tile + tiles (soil, grass and water)
+void get_menu_item_at_screen_coord(int screenx, int screeny, CropType* crop, Tile* tile)
 {
+	*crop = INVALID_CROPTYPE;
+	*tile = INVALID_TILE;
+	
 	int row = screeny / TILESIZE;
 	if (row != 0)
-		return INVALID_CROPTYPE;
+		return;
 	
 	int col = screenx / TILESIZE;
-	return col < CROPTYPES ? col : INVALID_CROPTYPE;
+	
+	if (col < CROPTYPES)
+		*crop = col;
+	
+	col -= CROPTYPES + 1;
+	switch (col) {
+		case 0: *tile = TILE_SOIL; break;
+		case 1: *tile = TILE_GRASS; break;
+		case 2: *tile = TILE_WATER; break;
+	}
 }
 
-// the tilemap starts from the second row of the screen
-void get_tile_from_screen_coord(int screenx, int screeny, int* row, int* col)
+void get_tile_at_screen_coord(int screenx, int screeny, int* row, int* col)
 {
 	if (screeny < TILEMAP_OFFSETY) {
 		*row = -1;

@@ -162,18 +162,8 @@ void clean_farmsim(Farmsim* sim)
 
 void plant_crop(Farmsim* sim, int row, int col, CropType type)
 {
-	if (type < 0 || type >= 20) {
-		printf("warning: tried planting invalid crop %d\n", type);
-		return;
-	}
-	
-	if (row < 0 || row >= sim->tilemap.rows) {
-		printf("warning: tried planting crop at out of range row %d\n", row);
-		return;
-	}
-	
-	if (col < 0 || col >= sim->tilemap.cols)  {
-		printf("warning: tried planting crop at out of range col %d\n", col);
+	if (type < 0 || type >= 20 || row < 0 || row >= sim->tilemap.rows || col < 0 || col >= sim->tilemap.cols) {
+		printf("error planting crop with args: type='%s', row=%d, col=%d\n", (type >= 0 && type < 20 ? cropnames[type] : "unknown"), row, col);
 		return;
 	}
 	
@@ -209,4 +199,30 @@ void set_speed(Farmsim* fs, Speed s)
 		case S_FAST: fs->millisperstep = 3000; break;
 		case S_SUPERFAST: fs->millisperstep = 1000; break;
 	}
+}
+
+void set_tile(Farmsim* fs, int row, int col, Tile t)
+{
+	Tilemap* tm = &fs->tilemap;
+	int rows = tm->rows;
+	int cols = tm->cols;
+	
+	if (row < 0 || row >= rows || col < 0 || col >= cols || t < 0) {
+		printf("set_tile error: row=%d, col=%d, type=%d\n", row, col, t);
+		return;
+	}
+	
+	if (tm->tiles[row][col] == TILE_PLANTED) { // remove crop before replacing the tile
+		Crop** pnext = &fs->crops;
+		while (*pnext) {
+			Crop* crop = *pnext;
+			if (crop->row == row && crop->col == col) {
+				printf("remove crop from row=%d col=%d\n", row, col);
+				*pnext = crop->next;
+				free(crop);
+			}
+		}
+	}
+	
+	tm->tiles[row][col] = t;
 }

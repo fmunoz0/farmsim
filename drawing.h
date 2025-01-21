@@ -4,6 +4,7 @@
 #include "farmsim.h"
 
 extern CropType selectedcrop;
+extern Tile selectedtile;
 
 #define TILESIZE 32
 
@@ -13,7 +14,7 @@ void draw_everything();
 void update_draw_state(unsigned dt);
 
 // used by click handler
-CropType get_menu_croptype_from_screen_coord(int screenx, int screeny);
-void get_tile_from_screen_coord(int screenx, int screeny, int* row, int* col);
+void get_menu_item_at_screen_coord(int screenx, int screeny, CropType* crop, Tile* tile);
+void get_tile_at_screen_coord(int screenx, int screeny, int* row, int* col);
 
 #endif
